@@ -1,0 +1,44 @@
+=head2 Thu Aug  2 10:11:46 2012: C<Module> L<IO::Tty|IO::Tty>
+
+=over 4
+
+=item *
+
+C<installed into: ../deps/lib/perl5/site_perl/5.8.5>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.10>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+
+=head2 Thu Aug  2 10:12:27 2012: C<Module> L<Expect|Expect>
+
+=over 4
+
+=item *
+
+C<installed into: ../deps/lib/perl5/site_perl/5.8.5>
+
+=item *
+
+C<LINKTYPE: dynamic>
+
+=item *
+
+C<VERSION: 1.15>
+
+=item *
+
+C<EXE_FILES: >
+
+=back
+

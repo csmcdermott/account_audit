@@ -1,0 +1,8 @@
+../deps/lib/perl5/site_perl/5.8.5/i386-linux-thread-multi/IO/Pty.pm
+../deps/lib/perl5/site_perl/5.8.5/i386-linux-thread-multi/IO/Tty.pm
+../deps/lib/perl5/site_perl/5.8.5/i386-linux-thread-multi/IO/Tty/Constant.pm
+../deps/lib/perl5/site_perl/5.8.5/i386-linux-thread-multi/auto/IO/Tty/Tty.bs
+../deps/lib/perl5/site_perl/5.8.5/i386-linux-thread-multi/auto/IO/Tty/Tty.so
+../deps/share/man/man3/IO::Pty.3pm
+../deps/share/man/man3/IO::Tty.3pm
+../deps/share/man/man3/IO::Tty::Constant.3pm
