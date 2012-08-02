@@ -1,2 +1,2 @@
 localhost
-capefur
+host2.network.com
