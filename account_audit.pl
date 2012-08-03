@@ -18,14 +18,13 @@ ReadMode 0;
 my $config = "./hosts.txt";
 open my $FH, $config or die $!;
 my @hosts = <$FH>;
-close FH;
+close $FH;
 
 my %results;
 
 foreach my $host (@hosts) {
   &fetch_admins($host);
 }
-
 
 my $output = "./report.csv";
 open my $OUTPUT, ">$output" or die $!;
@@ -50,17 +49,20 @@ sub fetch_admins {
     host => $hostname,
     user => $sshuser,
     password => $password,
-    raw_pty => 1
+    raw_pty => 1,
+    debug => 1
   );
 
-  my $login_output = $ssh->login();
+  print "attempting login\n";
+  my $login_output = $ssh->login() or return(1);
   if ($login_output !~ /Last login/) {
     print "ERROR: Could not log in to $hostname.\n";
     return 1;
   }
-
+  print "finished logging in... setting raw stty\n";
   $ssh->exec("stty raw -echo");
 
+  print "greping passwd\n";
   my @grep_results = $ssh->exec('egrep ":0:0:" /etc/passwd');
   foreach (@grep_results) {
     /^(\S+):\S+:0:0:(\S*?):/;
@@ -70,7 +72,7 @@ sub fetch_admins {
   }
 
   my $output = $ssh->exec("sudo cat /etc/sudoers");
-  if ($output =~ /Password:/) {
+  if ($output =~ /Password:|\[*sudo\]* password for/) {
     $ssh->send($password);
     $output = $ssh->read_all(20);
   }
@@ -79,20 +81,28 @@ sub fetch_admins {
     print "ERROR: No results from sudoers on $hostname.\n";
     return 1;
   }
+  my (%command_aliases, %user_aliases);
   foreach (@sudo_results) {
     if (/^#/) {
       next;
-    } elsif (/\S+_Alias/) {
+    } elsif (/Cmnd_Alias\s+(\S+)\s*=\s*(.*)/) {
+      $command_aliases{$1} = $2;
+    } elsif (/User_Alias\s+(\S+)\s*=\s*(.*)/) {
+      $user_aliases{$1} = $2;
+    } elsif (/Host_Alias/) {
       next;
     } elsif (/Defaults/) {
       next;
     } elsif (/LS_COLORS|LANG|LC_MEASUREMENT|LC_PAPER|_XKB_CHARSET/) {
       next;
-    } elsif (/\[\S+@\S+[\s:~]*\]/) {
+    } elsif (/\[*\S+@\S+[\s:~]*\]*/) {
       next;
     } elsif (/\%(\S+)\s+(.*)/) {
       my $group = $1;
       my $privs = $2;
+      if (exists $command_aliases{$privs}) {
+        my $privs = $command_aliases{$privs};
+      }
       my $group_output = $ssh->exec("grep $group /etc/group");
       my @members = split(',', $group_output);
       foreach (@members) {
@@ -106,6 +116,12 @@ sub fetch_admins {
     } elsif (/(\S+)\s+(.*)/) {
       my $username = $1;
       my $privs = $2;
+      if (exists $user_aliases{$username}) {
+        my $username = $user_aliases{$username};
+      }
+      if (exists $command_aliases{$privs}) {
+        my $privs = $command_aliases{$privs};
+      }
       if ($results{$hostname}{$username} eq "UID 0") {
         next;
       } else {
