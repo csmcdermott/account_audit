@@ -3,9 +3,7 @@
 use strict;
 use lib './deps/lib/perl5/site_perl/5.8.8';
 use Term::ReadKey;
-#use Expect;
 use Net::SSH::Expect;
-#$Expect::Exp_Internal = 1;
 my $timeout = 15;
 
 print "Please enter your SSH username: \n";
@@ -48,21 +46,24 @@ sub fetch_admins {
   my $ssh = Net::SSH::Expect->new (
     host => $hostname,
     user => $sshuser,
-    password => $password,
-    raw_pty => 1,
-    debug => 1
+  #  password => $password,
+    raw_pty => 1
   );
 
-  print "attempting login\n";
-  my $login_output = $ssh->login() or return(1);
-  if ($login_output !~ /Last login/) {
-    print "ERROR: Could not log in to $hostname.\n";
-    return 1;
-  }
-  print "finished logging in... setting raw stty\n";
+  ####### USE THIS FOR PUBLIC KEY AUTHENTICATION #######
+  $ssh->run_ssh();
+  ######################################################
+
+  ######## USE THIS FOR PASSWORD AUTHENTICATION ########
+  #my $login_output = $ssh->login() or return(1);
+  #if ($login_output !~ /Last login/) {
+  #  print "ERROR: Could not log in to $hostname.\n";
+  #  return 1;
+  #}
+  ######################################################
+
   $ssh->exec("stty raw -echo");
 
-  print "greping passwd\n";
   my @grep_results = $ssh->exec('egrep ":0:0:" /etc/passwd');
   foreach (@grep_results) {
     /^(\S+):\S+:0:0:(\S*?):/;
@@ -85,10 +86,14 @@ sub fetch_admins {
   foreach (@sudo_results) {
     if (/^#/) {
       next;
-    } elsif (/Cmnd_Alias\s+(\S+)\s*=\s*(.*)/) {
+    } elsif (/Cmnd_Alias\s+(\S+)\s*=\s*(.*)/i) {
       $command_aliases{$1} = $2;
-    } elsif (/User_Alias\s+(\S+)\s*=\s*(.*)/) {
-      $user_aliases{$1} = $2;
+      #print "Found cmnd_alias $1, saving $2\n";
+    } elsif (/User_Alias\s+(\S+)\s*=\s*(.*)/i) {
+      my @users = split(",", $2);
+      foreach my $user (@users) {
+        push (@{ $user_aliases{$1} }, $user . " via $1 alias");
+      }
     } elsif (/Host_Alias/) {
       next;
     } elsif (/Defaults/) {
@@ -100,30 +105,51 @@ sub fetch_admins {
     } elsif (/\%(\S+)\s+(.*)/) {
       my $group = $1;
       my $privs = $2;
-      if (exists $command_aliases{$privs}) {
-        my $privs = $command_aliases{$privs};
+      #print "Privs: $privs\n";
+      foreach (keys %command_aliases) {
+       # print " * Checking $_\n";
+        if ($privs =~ /^(.*)$_/) {
+          my $start = $1;
+       #   print "Matched $_, saving $start\n";
+          $privs = "(via $_ alias) " . $start . $command_aliases{$_};
+       #   print "New privs: $privs\n";
+        }
       }
-      my $group_output = $ssh->exec("grep $group /etc/group");
-      my @members = split(',', $group_output);
-      foreach (@members) {
-        if (/\[\S+@\S+[\s:~]*\]/) {
-          next;
-        } elsif (/$group:x:\d+/) {
+      my $group_output = $ssh->exec("grep ^$group /etc/group");
+      if ($group_output =~ /(\S+):x:(\d+):(\S*)/) {
+        my $gid = $2;
+        my $list_of_members = $3;
+        my $gid_result = $ssh->exec("grep $gid /etc/passwd");
+        my $owner;
+        if ($gid_result =~ /^(\S+):x:.+$gid.+:/) {
+          $owner = $1;
+        } else {
           next;
         }
-        push(@{ $results{$hostname}{$_ .  " (via $group group)"} }, $privs);
+        push(@{ $results{$hostname}{$owner .  " (via $group group)"} }, $privs);
+        my @members = split(',', $list_of_members);
+        foreach (@members) {
+          if (/\[\S+@\S+[\s:~]*\]/) {
+            next;
+          } elsif (/:x:\d+/) {
+            next;
+          }
+          push(@{ $results{$hostname}{$_ .  " (via $group group)"} }, $privs);
+        }
+      } else {
+        print "ERROR: Couldn't parse group membership for $group.\n";
+        next;
       }
     } elsif (/(\S+)\s+(.*)/) {
       my $username = $1;
       my $privs = $2;
-      if (exists $user_aliases{$username}) {
-        my $username = $user_aliases{$username};
-      }
       if (exists $command_aliases{$privs}) {
-        my $privs = $command_aliases{$privs};
+        $privs = $command_aliases{$privs};
       }
-      if ($results{$hostname}{$username} eq "UID 0") {
-        next;
+      if (exists $user_aliases{$username}) {
+        foreach (@{ $user_aliases{$username} }) {
+          push(@{ $results{$hostname}{$_} }, $privs);
+        }
       } else {
         push(@{ $results{$hostname}{$username} }, $privs);
       }
@@ -133,4 +159,3 @@ sub fetch_admins {
   }
   $ssh->close();
 }
-
