@@ -10,4 +10,10 @@ included in the deps folder, although of course they may not work with
 your version of perl so feel free to point the script at some other library
 location.
 
+If Cmnd_alias, User_alias, or system groups are in use, they will be expanded
+and the resultant set of privileges will be indidivually listed out. If a user
+is granted redundant or overlapping privileges by different grant lines, all
+entries will be listed invidually - this script makes no attempts to
+de-duplicate.
+
 Results are output to report.csv.
