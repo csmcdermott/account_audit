@@ -55,7 +55,7 @@ sub report {
   &logthis("DEBUG", "Printing report.");
   my $output = "./report.csv";
   open my $OUTPUT, ">$output" or die $!;
-  print $OUTPUT "Hostname, Username, Comment, Privileges\n";
+  print $OUTPUT "Hostname, Username, Privileges\n";
   foreach my $host (keys %admins) {
     foreach my $user (keys %{ $admins{$host} }) {
       foreach my $priv (@{ $admins{$host}{$user} }) {
