@@ -29,6 +29,9 @@ foreach my $host (@hosts) {
   chomp($host);
   &logthis("STATUS", "Examining $host.");
   my $ssh = &login($host);
+  if ($ssh == 1) {
+    next;
+  }
   &fetch_uid_0($host, $ssh);
   @sudoers = &fetch_sudoers($ssh, $password);
   if (scalar @sudoers < 1) {
