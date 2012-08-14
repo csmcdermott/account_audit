@@ -1,5 +1,16 @@
 #!/usr/bin/perl
 
+/*
+ *  This script audits privileged accounts on a list of Linux servers.
+ *
+ *  We offer no warranty or guarantee - use this code at your own risk!
+ *  All code is Copyright (C) 2012, AppliedTrust
+ *
+ *  Written by Chris McDermott, AppliedTrust, chris@appliedtrust.com
+ *    v 1.0 2012-08-14
+ *
+ */
+
 use strict;
 use lib './deps/lib/perl5/site_perl/5.8.8';
 use Term::ReadKey;

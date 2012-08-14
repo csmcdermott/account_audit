@@ -1,6 +1,16 @@
 account_audit
 =============
 
+Written by Chris McDermott, AppliedTrust
+  chris@appliedtrust.com
+  v1.0 2012-08-14
+
+
+------------------------------------------------------------------
+  We offer no warranty or guarantee - use this code at your own risk!
+  All code is Copyright (C) 2012, Applied Trust Engineering, Inc.
+------------------------------------------------------------------
+
 Perl script to audit accounts with privileged access across a linux environment
 
 hosts.txt contains a list of hostnames or IP addresses. When the script runs
